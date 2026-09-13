@@ -1,0 +1,1208 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f7f2e8">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="description" content="A shared daily Salah tracker for Mardonbek and Jorabek.">
+  <title>Salah Tracker</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='17' fill='%232f5147'/%3E%3Cpath d='M40 13a21 21 0 1 0 11 34A23 23 0 1 1 40 13Z' fill='%23f5d77c'/%3E%3Cpath d='m25 33 5 5 10-12' fill='none' stroke='%23fff' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <style>
+    :root {
+      color-scheme: light;
+      --page: #f7f2e8;
+      --page-deep: #efe7d8;
+      --surface: #fffdf9;
+      --surface-soft: #fbf7ef;
+      --ink: #273630;
+      --muted: #6f7a74;
+      --line: #e8dfd0;
+      --line-strong: #dcd0bf;
+      --green: #2f5147;
+      --green-soft: #eaf0ed;
+      --yellow: #e8b93f;
+      --yellow-soft: #fbf1cb;
+      --purple: #8b6fd6;
+      --purple-soft: #eee8fb;
+      --danger: #a35148;
+      --shadow: 0 18px 50px rgba(73, 57, 35, .09), 0 2px 8px rgba(73, 57, 35, .05);
+      --date-width: 168px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { background: var(--page); }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 12% 0%, rgba(232, 185, 63, .09), transparent 27rem),
+        radial-gradient(circle at 88% 4%, rgba(139, 111, 214, .07), transparent 24rem),
+        var(--page);
+      font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    button { font: inherit; }
+
+    .app {
+      width: min(1120px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: max(28px, env(safe-area-inset-top)) 0 max(34px, env(safe-area-inset-bottom));
+    }
+
+    .topbar {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 24px;
+      margin: 0 2px 22px;
+    }
+
+    .title-wrap { display: flex; align-items: center; gap: 15px; }
+
+    .mark {
+      display: grid;
+      width: 48px;
+      height: 48px;
+      flex: 0 0 auto;
+      place-items: center;
+      color: #fff9e7;
+      background: var(--green);
+      border-radius: 15px 15px 15px 5px;
+      box-shadow: 0 8px 18px rgba(47, 81, 71, .17);
+      font-family: Georgia, serif;
+      font-size: 25px;
+      line-height: 1;
+    }
+
+    h1 {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(1.75rem, 4vw, 2.25rem);
+      font-weight: 600;
+      letter-spacing: -.025em;
+      line-height: 1.05;
+    }
+
+    .people {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 13px;
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: .91rem;
+    }
+
+    .person-key { display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      box-shadow: inset 0 0 0 1px rgba(39, 54, 48, .07);
+    }
+
+    .legend-dot.yellow { background: var(--yellow); }
+    .legend-dot.purple { background: var(--purple); }
+
+    .sync {
+      display: inline-flex;
+      min-height: 32px;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 11px;
+      color: var(--muted);
+      background: rgba(255, 253, 249, .7);
+      border: 1px solid rgba(220, 208, 191, .8);
+      border-radius: 999px;
+      font-size: .79rem;
+      white-space: nowrap;
+    }
+
+    .sync-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #96a09a;
+      transition: background .2s ease;
+    }
+
+    .sync[data-state="synced"] .sync-dot { background: #65947e; }
+    .sync[data-state="syncing"] .sync-dot { background: var(--yellow); }
+    .sync[data-state="offline"] .sync-dot,
+    .sync[data-state="error"] .sync-dot { background: #b96b60; }
+
+    .calendar-card {
+      position: relative;
+      overflow: hidden;
+      background: var(--surface);
+      border: 1px solid rgba(220, 208, 191, .82);
+      border-radius: 22px;
+      box-shadow: var(--shadow);
+    }
+
+    .calendar-card::before {
+      position: absolute;
+      top: -62px;
+      right: 44px;
+      width: 124px;
+      height: 124px;
+      border: 1px solid rgba(47, 81, 71, .08);
+      border-radius: 62px 62px 16px 16px;
+      content: "";
+      pointer-events: none;
+    }
+
+    .calendar-toolbar {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 12px;
+      min-height: 84px;
+      padding: 17px 20px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .month-nav { display: flex; align-items: center; gap: 8px; }
+    .month-nav:last-child { justify-self: end; }
+
+    .nav-button,
+    .today-button,
+    .retry-button {
+      display: inline-grid;
+      min-width: 44px;
+      min-height: 44px;
+      place-items: center;
+      color: var(--green);
+      background: var(--surface-soft);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: transform .15s ease, background .15s ease, border-color .15s ease;
+    }
+
+    .nav-button:hover:not(:disabled),
+    .today-button:hover,
+    .retry-button:hover { background: #f5efe4; border-color: var(--line-strong); }
+
+    .nav-button:active:not(:disabled),
+    .today-button:active,
+    .retry-button:active { transform: scale(.96); }
+
+    .nav-button:disabled { opacity: .35; cursor: not-allowed; }
+
+    .nav-button svg { width: 19px; height: 19px; }
+
+    .today-button {
+      display: inline-flex;
+      width: auto;
+      padding: 0 14px;
+      font-size: .86rem;
+      font-weight: 650;
+    }
+
+    .month-heading { min-width: 205px; text-align: center; }
+
+    .month-heading h2 {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 1.35rem;
+      font-weight: 600;
+      letter-spacing: -.015em;
+    }
+
+    .month-heading p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: .78rem;
+    }
+
+    .state-strip {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 46px;
+      padding: 8px 16px;
+      color: var(--danger);
+      background: #fff7f4;
+      border-bottom: 1px solid #eedbd4;
+      font-size: .86rem;
+      text-align: center;
+    }
+
+    .state-strip.visible { display: flex; }
+
+    .retry-button {
+      min-width: auto;
+      min-height: 34px;
+      padding: 0 12px;
+      color: var(--danger);
+      background: #fff;
+      font-size: .8rem;
+      font-weight: 650;
+    }
+
+    .table-scroller {
+      position: relative;
+      width: 100%;
+      overflow-x: auto;
+      overscroll-behavior-x: contain;
+      scrollbar-color: #d7cbb8 transparent;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    table {
+      width: 100%;
+      min-width: 730px;
+      border-spacing: 0;
+      border-collapse: separate;
+      table-layout: fixed;
+    }
+
+    th,
+    td {
+      height: 58px;
+      padding: 0;
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      text-align: center;
+    }
+
+    th:last-child,
+    td:last-child { border-right: 0; }
+    tbody tr:last-child td { border-bottom: 0; }
+
+    thead th {
+      position: sticky;
+      top: 0;
+      z-index: 3;
+      height: 48px;
+      color: #68736d;
+      background: rgba(251, 247, 239, .97);
+      font-size: .78rem;
+      font-weight: 700;
+      letter-spacing: .045em;
+      text-transform: uppercase;
+      backdrop-filter: blur(8px);
+    }
+
+    th.date-column,
+    td.date-column {
+      position: sticky;
+      left: 0;
+      z-index: 2;
+      width: var(--date-width);
+      min-width: var(--date-width);
+      max-width: var(--date-width);
+      text-align: left;
+    }
+
+    thead th.date-column { z-index: 5; padding-left: 22px; }
+
+    td.date-column {
+      padding: 0 17px 0 22px;
+      background: var(--surface);
+      box-shadow: 7px 0 12px -12px rgba(46, 42, 34, .45);
+    }
+
+    tbody tr.weekend td { background-color: #fffdfa; }
+    tbody tr.weekend td.date-column { background: #fffdfa; }
+
+    tbody tr.today td { background-color: #fcf8ea; }
+    tbody tr.today td.date-column { background: #fcf8ea; }
+
+    tbody tr.future { color: #9aa19d; }
+    tbody tr.future td { background-color: #fcfbf8; }
+    tbody tr.future td.date-column { background: #fcfbf8; }
+
+    .date-main { display: flex; align-items: center; gap: 7px; font-size: .91rem; font-weight: 680; }
+    .date-sub { margin-top: 3px; color: var(--muted); font-size: .75rem; }
+
+    .today-badge {
+      padding: 2px 6px;
+      color: var(--green);
+      background: var(--green-soft);
+      border-radius: 999px;
+      font-size: .6rem;
+      font-weight: 800;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+    .cell-button {
+      position: relative;
+      display: flex;
+      width: 100%;
+      min-width: 84px;
+      height: 58px;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      padding: 7px;
+      color: inherit;
+      background: transparent;
+      border: 0;
+      border-radius: 0;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .cell-button:not(:disabled):hover { background: rgba(47, 81, 71, .035); }
+
+    .cell-button:not(:disabled):focus-visible {
+      z-index: 1;
+      outline: 2px solid rgba(47, 81, 71, .55);
+      outline-offset: -3px;
+      border-radius: 7px;
+    }
+
+    .cell-button:disabled { cursor: default; }
+
+    .cell-button.empty:not(:disabled)::after {
+      position: absolute;
+      width: 5px;
+      height: 5px;
+      background: #d9d3c9;
+      border-radius: 50%;
+      content: "";
+      opacity: 0;
+      transform: scale(.7);
+      transition: opacity .15s ease, transform .15s ease;
+    }
+
+    .cell-button.empty:not(:disabled):hover::after,
+    .cell-button.empty:not(:disabled):focus-visible::after { opacity: 1; transform: scale(1); }
+
+    .check-token {
+      display: inline-grid;
+      width: 28px;
+      height: 28px;
+      flex: 0 0 auto;
+      place-items: center;
+      border-radius: 50%;
+      box-shadow: inset 0 0 0 1px rgba(39, 54, 48, .05), 0 2px 5px rgba(58, 48, 31, .09);
+      animation: token-in .18s ease-out;
+    }
+
+    .check-token.yellow { background: var(--yellow); }
+    .check-token.purple { background: var(--purple); }
+    .check-token svg { width: 16px; height: 16px; color: #fff; stroke-width: 2.8; }
+
+    .skeleton-token {
+      display: inline-block;
+      width: 27px;
+      height: 9px;
+      overflow: hidden;
+      background: #eee9df;
+      border-radius: 99px;
+    }
+
+    .skeleton-token::after {
+      display: block;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.9), transparent);
+      content: "";
+      animation: shimmer 1.25s infinite;
+      transform: translateX(-100%);
+    }
+
+    .calendar-foot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 13px 20px;
+      color: var(--muted);
+      background: var(--surface-soft);
+      border-top: 1px solid var(--line);
+      font-size: .75rem;
+    }
+
+    .start-note { color: #7d7468; }
+
+    .prayer-menu {
+      position: fixed;
+      z-index: 100;
+      width: min(256px, calc(100vw - 24px));
+      padding: 8px;
+      visibility: hidden;
+      opacity: 0;
+      background: rgba(255, 253, 249, .98);
+      border: 1px solid var(--line-strong);
+      border-radius: 16px;
+      box-shadow: 0 18px 50px rgba(42, 35, 24, .18), 0 3px 10px rgba(42, 35, 24, .07);
+      transform: translateY(-4px) scale(.98);
+      transform-origin: top center;
+      transition: opacity .13s ease, transform .13s ease, visibility .13s;
+      backdrop-filter: blur(16px);
+    }
+
+    .prayer-menu.open { visibility: visible; opacity: 1; transform: translateY(0) scale(1); }
+
+    .menu-title {
+      padding: 7px 10px 8px;
+      color: var(--muted);
+      font-size: .75rem;
+      font-weight: 650;
+    }
+
+    .person-toggle {
+      display: flex;
+      width: 100%;
+      min-height: 48px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 8px 10px;
+      color: var(--ink);
+      background: transparent;
+      border: 0;
+      border-radius: 11px;
+      cursor: pointer;
+      text-align: left;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .person-toggle:hover { background: var(--surface-soft); }
+    .person-toggle:focus-visible { outline: 2px solid rgba(47, 81, 71, .5); outline-offset: -2px; }
+    .person-toggle:disabled { opacity: .62; cursor: wait; }
+
+    .person-label { display: flex; align-items: center; gap: 10px; font-size: .91rem; font-weight: 620; }
+
+    .person-color { width: 10px; height: 10px; border-radius: 50%; }
+    .person-color.yellow { background: var(--yellow); }
+    .person-color.purple { background: var(--purple); }
+
+    .checkbox-ui {
+      display: grid;
+      width: 25px;
+      height: 25px;
+      flex: 0 0 auto;
+      place-items: center;
+      color: transparent;
+      background: #fff;
+      border: 1.5px solid #d6cec1;
+      border-radius: 8px;
+      transition: background .15s ease, border-color .15s ease, color .15s ease;
+    }
+
+    .checkbox-ui svg { width: 15px; height: 15px; stroke-width: 3; }
+    .person-toggle[aria-checked="true"] .checkbox-ui { color: #fff; }
+    .person-toggle[data-person="Mardonbek"][aria-checked="true"] .checkbox-ui { background: var(--yellow); border-color: var(--yellow); }
+    .person-toggle[data-person="Jorabek"][aria-checked="true"] .checkbox-ui { background: var(--purple); border-color: var(--purple); }
+
+    .toast-region {
+      position: fixed;
+      right: max(16px, env(safe-area-inset-right));
+      bottom: max(18px, calc(env(safe-area-inset-bottom) + 12px));
+      z-index: 200;
+      display: grid;
+      width: min(360px, calc(100vw - 32px));
+      gap: 8px;
+      pointer-events: none;
+    }
+
+    .toast {
+      justify-self: end;
+      padding: 11px 14px;
+      color: #fff;
+      background: #4f4740;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(42, 35, 24, .2);
+      font-size: .85rem;
+      line-height: 1.35;
+      animation: toast-in .2s ease-out;
+    }
+
+    @keyframes token-in { from { opacity: 0; transform: scale(.75); } }
+    @keyframes shimmer { to { transform: translateX(100%); } }
+    @keyframes toast-in { from { opacity: 0; transform: translateY(7px); } }
+
+    @media (max-width: 700px) {
+      :root { --date-width: 132px; }
+
+      .app { width: min(100% - 20px, 1120px); padding-top: max(20px, env(safe-area-inset-top)); }
+      .topbar { align-items: flex-start; margin-bottom: 16px; }
+      .title-wrap { gap: 11px; }
+      .mark { width: 43px; height: 43px; border-radius: 14px 14px 14px 5px; font-size: 22px; }
+      .people { gap: 10px; margin-top: 6px; font-size: .81rem; }
+      .sync { min-height: 29px; padding: 5px 9px; }
+      .sync-text { display: inline; font-size: .7rem; }
+      .topbar { gap: 8px; }
+      .calendar-card { border-radius: 18px; }
+      .calendar-toolbar { grid-template-columns: auto 1fr auto; min-height: 76px; padding: 12px; }
+      .month-nav { gap: 6px; }
+      .month-nav:last-child { display: contents; }
+      .today-button { grid-column: 1 / -1; grid-row: 2; justify-self: center; min-height: 36px; padding: 0 13px; }
+      .month-heading { min-width: 0; }
+      .month-heading h2 { font-size: 1.17rem; }
+      .month-heading p { display: none; }
+      .nav-button { min-width: 44px; min-height: 44px; }
+      table { min-width: 440px; }
+      :root { --date-width: 108px; }
+      .cell-button { min-width: 0; gap: 3px; padding: 3px; }
+      .check-token { width: 23px; height: 23px; }
+      thead th { font-size: .67rem; letter-spacing: 0; }
+      thead th.date-column { padding-left: 14px; }
+      td.date-column { padding: 0 10px 0 14px; }
+      .date-main { gap: 5px; font-size: .83rem; }
+      .date-sub { font-size: .7rem; }
+      .today-badge { padding: 2px 4px; font-size: .53rem; }
+      .calendar-foot { padding: 11px 14px; }
+      .calendar-foot span:last-child { display: none; }
+
+    }
+
+    @media (max-width: 390px) {
+      .people { display: grid; gap: 4px; }
+      .calendar-toolbar { padding-inline: 9px; }
+      .month-heading h2 { font-size: 1.08rem; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="title-wrap">
+        <div class="mark" aria-hidden="true">ص</div>
+        <div>
+          <h1>Salah Tracker</h1>
+          <div class="people" aria-label="People and their colors">
+            <span class="person-key"><span class="legend-dot yellow"></span>Mardonbek</span>
+            <span class="person-key"><span class="legend-dot purple"></span>Jorabek</span>
+          </div>
+        </div>
+      </div>
+      <div class="sync" id="syncStatus" data-state="syncing" role="status" aria-live="polite">
+        <span class="sync-dot"></span>
+        <span class="sync-text" id="syncText">Connecting</span>
+      </div>
+    </header>
+
+    <section id="connectionPanel" hidden style="margin-bottom:18px;padding:20px;background:var(--surface);border:1px solid var(--line);border-radius:16px">
+      <h2 style="margin:0 0 10px;font-size:1.1rem">Connect this device</h2>
+      <p style="font-size:.9rem;line-height:1.6">Repository: <strong>mardonm/tracker</strong>. Create a fine-grained token with access only to this repository and <strong>Contents: Read and write</strong>. Enter it here, not in the HTML. GitHub revokes publicly committed tokens.</p>
+      <form id="connectionForm">
+        <label for="tokenInput">GitHub token</label>
+        <input id="tokenInput" type="password" autocomplete="off" autocapitalize="none" spellcheck="false" required style="display:block;width:100%;margin:8px 0 12px;padding:12px;font:inherit;border:1px solid var(--line-strong);border-radius:10px">
+        <label style="display:block;margin:12px 0;font-size:.9rem"><input id="rememberToken" type="checkbox"> Remember on this device (only on a trusted phone)</label>
+        <button id="connectButton" class="today-button" type="submit">Connect</button>
+        <button id="forgetToken" class="today-button" type="button">Forget key</button>
+      </form>
+      <p style="font-size:.8rem;color:var(--muted);line-height:1.6">No account screen. Both people can edit either name. Statuses are shared through GitHub and checked every 15 seconds while this tab is visible. Only the optional connection key is stored on this device. If the repository is public, its prayer history is public too. Anyone with this key can modify the repository. Without Remember, enter it again after reloading.</p>
+    </section>
+    <section class="calendar-card" aria-label="Prayer calendar">
+      <div class="calendar-toolbar">
+        <div class="month-nav">
+          <button class="nav-button" id="previousMonth" type="button" aria-label="Previous month">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+          </button>
+        </div>
+
+        <div class="month-heading">
+          <h2 id="monthTitle">September 2026</h2>
+          <p>Five daily prayers</p>
+        </div>
+
+        <div class="month-nav">
+          <button class="today-button" id="todayButton" type="button">Today</button>
+          <button class="nav-button" id="nextMonth" type="button" aria-label="Next month">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="state-strip" id="stateStrip" role="status">
+        <span id="stateMessage">Could not load prayer data.</span>
+        <button class="retry-button" id="retryButton" type="button">Try again</button>
+      </div>
+
+      <div class="table-scroller" id="tableScroller" tabindex="0" aria-label="Scrollable prayer calendar">
+        <table>
+          <colgroup>
+            <col style="width: var(--date-width)">
+            <col><col><col><col><col>
+          </colgroup>
+          <thead>
+            <tr>
+              <th class="date-column" scope="col">Date</th>
+              <th scope="col">Fajr</th>
+              <th scope="col">Dhuhr</th>
+              <th scope="col">Asr</th>
+              <th scope="col">Maghrib</th>
+              <th scope="col">Isha</th>
+            </tr>
+          </thead>
+          <tbody id="calendarBody"></tbody>
+        </table>
+      </div>
+
+      <footer class="calendar-foot">
+        <span class="start-note">Tracking since 13 September 2026</span>
+        <button id="connectionSettings" class="retry-button" type="button">Connection</button>
+      </footer>
+    </section>
+  </main>
+
+  <div class="prayer-menu" id="prayerMenu" role="dialog" aria-label="Update prayer status" aria-hidden="true">
+    <div class="menu-title" id="menuTitle">Fajr · 13 Sep</div>
+    <button class="person-toggle" type="button" role="checkbox" aria-checked="false" data-person="Mardonbek">
+      <span class="person-label"><span class="person-color yellow"></span>Mardonbek</span>
+      <span class="checkbox-ui">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>
+      </span>
+    </button>
+    <button class="person-toggle" type="button" role="checkbox" aria-checked="false" data-person="Jorabek">
+      <span class="person-label"><span class="person-color purple"></span>Jorabek</span>
+      <span class="checkbox-ui">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>
+      </span>
+    </button>
+  </div>
+
+  <div class="toast-region" id="toastRegion" aria-live="polite" aria-atomic="false"></div>
+
+  <script>
+    "use strict";
+
+    // Tokens are entered on-device, never committed to the public repository.
+    const TOKEN_STORAGE = "salah:mardonm:tracker:token";
+    let GITHUB_TOKEN = "";
+    try { GITHUB_TOKEN = localStorage.getItem(TOKEN_STORAGE) || ""; } catch (_) {}
+    const REPOSITORY = "mardonm/tracker";
+    // Blank means GitHub's default branch (detected automatically).
+    const DATA_BRANCH = "";
+    const POLL_MS = 15000;
+
+    const START_DATE = new Date(2026, 8, 13);
+    const START_MONTH = new Date(2026, 8, 1);
+    const PRAYERS = ["fajr", "dhuhr", "asr", "maghrib", "isha"];
+    const PRAYER_LABELS = { fajr: "Fajr", dhuhr: "Dhuhr", asr: "Asr", maghrib: "Maghrib", isha: "Isha" };
+    const PEOPLE = ["Mardonbek", "Jorabek"];
+
+    const calendarBody = document.getElementById("calendarBody");
+    const monthTitle = document.getElementById("monthTitle");
+    const previousMonthButton = document.getElementById("previousMonth");
+    const nextMonthButton = document.getElementById("nextMonth");
+    const todayButton = document.getElementById("todayButton");
+    const retryButton = document.getElementById("retryButton");
+    const stateStrip = document.getElementById("stateStrip");
+    const stateMessage = document.getElementById("stateMessage");
+    const prayerMenu = document.getElementById("prayerMenu");
+    const menuTitle = document.getElementById("menuTitle");
+    const syncStatus = document.getElementById("syncStatus");
+    const syncText = document.getElementById("syncText");
+    const toastRegion = document.getElementById("toastRegion");
+
+    let selectedMonth = firstOfMonth(maxDate(startOfToday(), START_DATE));
+    let statuses = new Map();
+    let activeCell = null;
+    let loadSequence = 0;
+    let ready = false;
+    let loading = false;
+    let branch = "";
+    let repositoryReady = false;
+    let writing = false;
+    let polling = false;
+    let cooldownUntil = 0;
+    let lastToday = dateKey(startOfToday());
+    const savingKeys = new Set();
+
+    const checkSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>';
+
+    function startOfToday() {
+      const now = new Date();
+      return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    }
+
+    function firstOfMonth(value) {
+      return new Date(value.getFullYear(), value.getMonth(), 1);
+    }
+
+    function maxDate(a, b) {
+      return a > b ? a : b;
+    }
+
+    function dateKey(value) {
+      const year = value.getFullYear();
+      const month = String(value.getMonth() + 1).padStart(2, "0");
+      const day = String(value.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    }
+
+    function parseLocalDate(value) {
+      const [year, month, day] = value.split("-").map(Number);
+      return new Date(year, month - 1, day);
+    }
+
+    function recordKey(day, prayer, person) {
+      return `${day}|${prayer}|${person}`;
+    }
+
+    function monthRange() {
+      const monthStart = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), 1);
+      const firstVisible = maxDate(monthStart, START_DATE);
+      const lastVisible = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0);
+      return { firstVisible, lastVisible };
+    }
+
+    function datesForSelectedMonth() {
+      const { firstVisible, lastVisible } = monthRange();
+      const dates = [];
+      for (let cursor = new Date(firstVisible); cursor <= lastVisible; cursor.setDate(cursor.getDate() + 1)) {
+        dates.push(new Date(cursor));
+      }
+      return dates;
+    }
+
+    function generateCalendar() {
+      closePrayerMenu(false);
+      const today = startOfToday();
+      const todayKey = dateKey(today);
+      const rows = datesForSelectedMonth().map(day => {
+        const dayKey = dateKey(day);
+        const isToday = dayKey === todayKey;
+        const isFuture = day > today;
+        const isWeekend = day.getDay() === 0 || day.getDay() === 6;
+        const dateLabel = new Intl.DateTimeFormat("en", { day: "numeric", month: "short" }).format(day);
+        const weekday = new Intl.DateTimeFormat("en", { weekday: "long" }).format(day);
+        const rowClasses = [isToday ? "today" : "", isFuture ? "future" : "", isWeekend ? "weekend" : ""].filter(Boolean).join(" ");
+
+        const prayerCells = PRAYERS.map(prayer => {
+          const disabled = isFuture || !ready;
+          return `<td><button class="cell-button empty" type="button" data-date="${dayKey}" data-prayer="${prayer}" ${disabled ? "disabled" : ""} aria-label="${PRAYER_LABELS[prayer]} on ${weekday}, ${dateLabel}">${loading ? '<span class="skeleton-token"></span>' : ""}</button></td>`;
+        }).join("");
+
+        return `<tr class="${rowClasses}">
+          <td class="date-column">
+            <div class="date-main"><span>${dateLabel}</span>${isToday ? '<span class="today-badge">Today</span>' : ""}</div>
+            <div class="date-sub">${weekday}</div>
+          </td>
+          ${prayerCells}
+        </tr>`;
+      }).join("");
+
+      calendarBody.innerHTML = rows;
+      monthTitle.textContent = new Intl.DateTimeFormat("en", { month: "long", year: "numeric" }).format(selectedMonth);
+      previousMonthButton.disabled = selectedMonth <= START_MONTH;
+
+      if (ready && !loading) {
+        renderAllStatuses();
+      }
+    }
+
+    function renderAllStatuses() {
+      calendarBody.querySelectorAll(".cell-button").forEach(renderCellStatus);
+    }
+
+    function renderCellStatus(buttonOrDay, prayerMaybe) {
+      const button = buttonOrDay instanceof HTMLElement
+        ? buttonOrDay
+        : calendarBody.querySelector(`[data-date="${buttonOrDay}"][data-prayer="${prayerMaybe}"]`);
+      if (!button) return;
+
+      const day = button.dataset.date;
+      const prayer = button.dataset.prayer;
+      const completedPeople = PEOPLE.filter(person => statuses.get(recordKey(day, prayer, person)) === true);
+      button.classList.toggle("empty", completedPeople.length === 0);
+      button.innerHTML = completedPeople.map(person => {
+        const color = person === "Mardonbek" ? "yellow" : "purple";
+        return `<span class="check-token ${color}" title="${person}" aria-hidden="true">${checkSvg}</span>`;
+      }).join("");
+
+      const dayDate = parseLocalDate(day);
+      const fullDate = new Intl.DateTimeFormat("en", { weekday: "long", day: "numeric", month: "long" }).format(dayDate);
+      const state = completedPeople.length ? `Completed by ${completedPeople.join(" and ")}` : "Not marked";
+      button.setAttribute("aria-label", `${PRAYER_LABELS[prayer]} on ${fullDate}. ${state}`);
+    }
+
+    function configured() {
+      return Boolean(GITHUB_TOKEN.trim()) && !GITHUB_TOKEN.includes("PASTE_YOUR");
+    }
+
+    function monthFile() {
+      return "tracker-data/" + dateKey(selectedMonth).slice(0, 7) + ".json";
+    }
+
+    async function github(path, options = {}) {
+      if (Date.now() < cooldownUntil) throw new Error("GitHub rate limit: please wait before trying again.");
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 20000);
+      try {
+        const response = await fetch("https://api.github.com/repos/" + REPOSITORY + path, {
+          ...options,
+          cache: "no-store",
+          signal: controller.signal,
+          headers: {
+            Accept: "application/vnd.github+json",
+            Authorization: "Bearer " + GITHUB_TOKEN.trim(),
+            "X-GitHub-Api-Version": "2022-11-28",
+            ...(options.body ? { "Content-Type": "application/json" } : {})
+          }
+        });
+        if (response.ok) return await response.json();
+        let reason = "GitHub request failed (" + response.status + ").";
+        if (response.status === 401) reason = "Token invalid or expired. Open Connection settings to replace it.";
+        if (response.status === 403) reason = "GitHub denied access. Check token permissions, branch rules, or rate limits.";
+        if (response.status === 404) reason = "Repository, branch, or file not found. Check token access to mardonm/tracker.";
+        const retryAfter = Number(response.headers.get("retry-after"));
+        if (response.status === 429 || response.headers.get("x-ratelimit-remaining") === "0" || retryAfter > 0) {
+          const reset = Number(response.headers.get("x-ratelimit-reset")) * 1000;
+          cooldownUntil = Math.max(Date.now() + (retryAfter || 60) * 1000, reset || 0);
+          reason = "GitHub rate limit. Automatic checks will resume later.";
+        }
+        const error = new Error(reason);
+        error.status = response.status;
+        throw error;
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+
+    async function initializeRepository() {
+      if (repositoryReady) return;
+      const repo = await github("");
+      branch = DATA_BRANCH || repo.default_branch;
+      if (!branch) throw new Error("Upload index.html to the repository first.");
+      // Verify the branch before treating a missing monthly file as an empty month.
+      await github("/branches/" + encodeURIComponent(branch));
+      repositoryReady = true;
+    }
+
+    function decodeFile(content) {
+      const bytes = Uint8Array.from(atob(content.replace(/\s/g, "")), c => c.charCodeAt(0));
+      return JSON.parse(new TextDecoder().decode(bytes));
+    }
+
+    function encodeFile(data) {
+      const bytes = new TextEncoder().encode(JSON.stringify(data, null, 2) + "\n");
+      let binary = "";
+      for (const byte of bytes) binary += String.fromCharCode(byte);
+      return btoa(binary);
+    }
+
+    async function readMonth(path) {
+      let file;
+      try {
+        file = await github("/contents/" + path + "?ref=" + encodeURIComponent(branch));
+      } catch (error) {
+        if (error.status !== 404) throw error;
+        // A revoked token/private repository can also return 404. Recheck access.
+        await github("/branches/" + encodeURIComponent(branch));
+        return { sha: null, data: { version: 1, statuses: {} } };
+      }
+      if (file.type !== "file" || file.encoding !== "base64") throw new Error("Unsupported data file.");
+      const data = decodeFile(file.content);
+      if (data.version !== 1 || !data.statuses || typeof data.statuses !== "object" || Array.isArray(data.statuses)) {
+        throw new Error("Data file has an unexpected format. It was not overwritten.");
+      }
+      for (const [key, value] of Object.entries(data.statuses)) {
+        if (!/^\d{4}-\d{2}-\d{2}\|(fajr|dhuhr|asr|maghrib|isha)\|(Mardonbek|Jorabek)$/.test(key) ||
+            typeof value !== "boolean" || key.slice(0, 7) !== path.slice(13, 20)) {
+          throw new Error("Data validation failed. Existing history was not overwritten.");
+        }
+      }
+      return { sha: file.sha, data };
+    }
+
+    async function savePrayerStatus(path, key, completed) {
+      // Fetch the latest SHA before every write. On conflict, merge this ONE
+      // person's change into the newer file; never replace other people's edits.
+      for (let attempt = 0; attempt < 4; attempt++) {
+        const latest = await readMonth(path);
+        latest.data.statuses[key] = completed;
+        const body = {
+          message: "Update prayer status [skip ci]",
+          branch,
+          content: encodeFile(latest.data)
+        };
+        if (latest.sha) body.sha = latest.sha;
+        try {
+          await github("/contents/" + path, { method: "PUT", body: JSON.stringify(body) });
+          return latest.data;
+        } catch (error) {
+          if (![409, 422].includes(error.status) || attempt === 3) throw error;
+          await new Promise(resolve => setTimeout(resolve, 250 + Math.random() * 600));
+        }
+      }
+    }
+
+    async function loadPrayerStatuses() {
+      if (writing) return;
+      const sequence = ++loadSequence;
+      loading = true;
+      ready = false;
+      closePrayerMenu(false);
+      setStateStrip();
+      setConnection("syncing", "Loading prayers…");
+      generateCalendar();
+      try {
+        if (!configured()) {
+          document.getElementById("connectionPanel").hidden = false;
+          throw new Error("Enter a GitHub token below to connect this device.");
+        }
+        await initializeRepository();
+        const result = await readMonth(monthFile());
+        if (sequence !== loadSequence) return;
+        statuses = new Map(Object.entries(result.data.statuses));
+        loading = false;
+        ready = true;
+        generateCalendar();
+        setConnection("synced", "Synced");
+      } catch (error) {
+        if (sequence !== loadSequence) return;
+        loading = false;
+        setStateStrip(error.message || "Could not load prayers.");
+        generateCalendar();
+        setConnection(navigator.onLine ? "error" : "offline", navigator.onLine ? "Not synced" : "Offline");
+      }
+    }
+
+    function openPrayerMenu(button) {
+      if (!ready || button.disabled) return;
+      activeCell = { button, day: button.dataset.date, prayer: button.dataset.prayer };
+      const displayDate = new Intl.DateTimeFormat("en", { day: "numeric", month: "short" }).format(parseLocalDate(activeCell.day));
+      menuTitle.textContent = `${PRAYER_LABELS[activeCell.prayer]} · ${displayDate}`;
+      updatePrayerMenu();
+      prayerMenu.classList.add("open");
+      prayerMenu.setAttribute("aria-hidden", "false");
+      positionPrayerMenu(button);
+      requestAnimationFrame(() => prayerMenu.querySelector(".person-toggle")?.focus({ preventScroll: true }));
+    }
+
+    function updatePrayerMenu() {
+      if (!activeCell) return;
+      prayerMenu.querySelectorAll(".person-toggle").forEach(toggle => {
+        const key = recordKey(activeCell.day, activeCell.prayer, toggle.dataset.person);
+        toggle.setAttribute("aria-checked", statuses.get(key) === true ? "true" : "false");
+        toggle.disabled = writing;
+      });
+    }
+
+    function positionPrayerMenu(button) {
+      const rect = button.getBoundingClientRect();
+      const width = Math.min(256, window.innerWidth - 24);
+      prayerMenu.style.width = `${width}px`;
+      const measuredHeight = prayerMenu.offsetHeight || 128;
+      const left = Math.min(Math.max(12, rect.left + rect.width / 2 - width / 2), window.innerWidth - width - 12);
+      const roomBelow = window.innerHeight - rect.bottom;
+      const top = roomBelow >= measuredHeight + 12
+        ? rect.bottom + 7
+        : Math.max(10, rect.top - measuredHeight - 7);
+      prayerMenu.style.left = `${Math.round(left)}px`;
+      prayerMenu.style.top = `${Math.round(top)}px`;
+    }
+
+    function closePrayerMenu(returnFocus = true) {
+      if (!activeCell) return;
+      const previousButton = activeCell.button;
+      prayerMenu.classList.remove("open");
+      prayerMenu.setAttribute("aria-hidden", "true");
+      activeCell = null;
+      if (prayerMenu.contains(document.activeElement) && !returnFocus) document.activeElement.blur();
+      if (returnFocus && previousButton?.isConnected) previousButton.focus({ preventScroll: true });
+    }
+
+    async function togglePrayerStatus(person) {
+      if (!activeCell || writing || !ready) return;
+      const { day, prayer } = activeCell;
+      if (parseLocalDate(day) > startOfToday()) return;
+      const path = monthFile();
+      const key = recordKey(day, prayer, person);
+      const previous = statuses.get(key) === true;
+      writing = true;
+      ++loadSequence;
+      savingKeys.add(key);
+      previousMonthButton.disabled = true;
+      nextMonthButton.disabled = true;
+      todayButton.disabled = true;
+      statuses.set(key, !previous);
+      renderCellStatus(day, prayer);
+      updatePrayerMenu();
+      setConnection("syncing", "Saving…");
+      try {
+        const data = await savePrayerStatus(path, key, !previous);
+        statuses = new Map(Object.entries(data.statuses));
+        renderAllStatuses();
+        setStateStrip();
+        setConnection("synced", "Synced");
+      } catch (error) {
+        statuses.set(key, previous);
+        renderCellStatus(day, prayer);
+        setConnection(navigator.onLine ? "error" : "offline", navigator.onLine ? "Save failed" : "Offline");
+        showToast("Could not confirm save. Check your connection.");
+        // An interrupted response may hide a successful commit. Reconcile on next poll.
+        setStateStrip(error.message || "Could not confirm save.");
+      } finally {
+        savingKeys.delete(key);
+        writing = false;
+        previousMonthButton.disabled = selectedMonth <= START_MONTH;
+        nextMonthButton.disabled = false;
+        todayButton.disabled = false;
+        updatePrayerMenu();
+      }
+    }
+
+    async function pollStatuses() {
+      if (document.hidden || writing || loading || polling || !ready || !navigator.onLine) return;
+      polling = true;
+      const sequence = loadSequence;
+      const path = monthFile();
+      try {
+        const result = await readMonth(path);
+        if (sequence !== loadSequence || writing) return;
+        statuses = new Map(Object.entries(result.data.statuses));
+        renderAllStatuses();
+        updatePrayerMenu();
+        setStateStrip();
+        setConnection("synced", "Synced");
+      } catch (error) {
+        if (sequence === loadSequence && !writing) {
+          setConnection("error", "Reconnecting");
+          setStateStrip(error.message || "Connection lost. Displaying last loaded data.");
+        }
+      } finally {
+        polling = false;
+      }
+    }
+
+    function subscribeToRealtimeUpdates() {
+      // GitHub Pages has no push server. Checks run every 15 seconds in active tabs.
+      setInterval(() => {
+        const today = dateKey(startOfToday());
+        if (today !== lastToday && !writing) {
+          lastToday = today;
+          generateCalendar();
+        }
+        pollStatuses();
+      }, POLL_MS);
+      document.addEventListener("visibilitychange", () => {
+        if (!document.hidden) ready ? pollStatuses() : loadPrayerStatuses();
+      });
+    }
+
+    function setConnection(state, text) {
+      syncStatus.dataset.state = state;
+      syncText.textContent = text;
+      syncStatus.setAttribute("aria-label", `Connection status: ${text}`);
+    }
+
+    function setStateStrip(message = "") {
+      stateStrip.classList.toggle("visible", Boolean(message));
+      stateMessage.textContent = message;
+    }
+
+    async function responseError(response) {
+      try {
+        const body = await response.json();
+        return body.error || `Request failed (${response.status})`;
+      } catch (_) {
+        return `Request failed (${response.status})`;
+      }
+    }
+
+    function showToast(message) {
+      const toast = document.createElement("div");
+      toast.className = "toast";
+      toast.setAttribute("role", "status");
+      toast.textContent = message;
+      toastRegion.appendChild(toast);
+      window.setTimeout(() => toast.remove(), 3600);
+    }
+
+    calendarBody.addEventListener("click", event => {
+      const button = event.target.closest(".cell-button");
+      if (button) openPrayerMenu(button);
+    });
+
+    prayerMenu.addEventListener("click", event => {
+      const toggle = event.target.closest(".person-toggle");
+      if (toggle) togglePrayerStatus(toggle.dataset.person);
+    });
+
+    document.addEventListener("pointerdown", event => {
+      if (!activeCell) return;
+      if (!prayerMenu.contains(event.target) && !activeCell.button.contains(event.target)) closePrayerMenu(false);
+    });
+
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape" && activeCell) closePrayerMenu();
+    });
+
+    previousMonthButton.addEventListener("click", () => {
+      if (writing || selectedMonth <= START_MONTH) return;
+      selectedMonth = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() - 1, 1);
+      loadPrayerStatuses();
+    });
+
+    nextMonthButton.addEventListener("click", () => {
+      if (writing) return;
+      selectedMonth = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 1);
+      loadPrayerStatuses();
+    });
+
+    todayButton.addEventListener("click", () => {
+      if (writing) return;
+      selectedMonth = firstOfMonth(maxDate(startOfToday(), START_DATE));
+      loadPrayerStatuses();
+    });
+
+    retryButton.addEventListener("click", loadPrayerStatuses);
+    window.addEventListener("resize", () => closePrayerMenu(false));
+    window.addEventListener("scroll", () => closePrayerMenu(false), true);
+    window.addEventListener("online", () => { setConnection("syncing", "Reconnecting"); loadPrayerStatuses(); });
+    window.addEventListener("offline", () => setConnection("offline", "Offline"));
+
+
+    document.getElementById("connectionSettings").addEventListener("click", () => {
+      if (writing) return;
+      const panel = document.getElementById("connectionPanel");
+      panel.hidden = !panel.hidden;
+      if (!panel.hidden) panel.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+    document.getElementById("connectionForm").addEventListener("submit", async event => {
+      event.preventDefault();
+      if (writing) return;
+      GITHUB_TOKEN = document.getElementById("tokenInput").value.trim();
+      document.getElementById("tokenInput").value = "";
+      repositoryReady = false;
+      cooldownUntil = 0;
+      const button = document.getElementById("connectButton");
+      button.disabled = true;
+      await loadPrayerStatuses();
+      button.disabled = false;
+      try {
+        localStorage.removeItem(TOKEN_STORAGE);
+        if (ready && document.getElementById("rememberToken").checked) localStorage.setItem(TOKEN_STORAGE, GITHUB_TOKEN);
+      } catch (_) { showToast("Key could not be remembered. It works for this tab only."); }
+      if (ready) document.getElementById("connectionPanel").hidden = true;
+    });
+    document.getElementById("forgetToken").addEventListener("click", () => {
+      if (writing) return;
+      GITHUB_TOKEN = "";
+      repositoryReady = false;
+      try { localStorage.removeItem(TOKEN_STORAGE); } catch (_) {}
+      statuses.clear();
+      loadPrayerStatuses();
+    });
+    generateCalendar();
+    subscribeToRealtimeUpdates();
+    loadPrayerStatuses();
+
+  </script>
+</body>
+</html>
