@@ -16,7 +16,7 @@
     "2026-09-14|dhuhr|Mardonbek": true,
     "2026-09-14|maghrib|Mardonbek": true,
     "2026-09-14|dhuhr|Jorabek": true,
-    "2026-09-14|asr|Jorabek": true,
+    "2026-09-14|asr|Jorabek": false,
     "2026-09-14|maghrib|Jorabek": true,
     "2026-09-14|isha|Jorabek": true,
     "2026-09-15|fajr|Mardonbek": true,
