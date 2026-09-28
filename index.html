@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#f7f2e8">
   <meta name="robots" content="noindex, nofollow">
-  <meta name="description" content="A shared daily Salah tracker for Mardonbek and Jorabek.">
+  <meta name="description" content="A shared daily Salah tracker for Mardonbek, Jorabek, and Fayzulla.">
   <title>Salah Tracker</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='17' fill='%232f5147'/%3E%3Cpath d='M40 13a21 21 0 1 0 11 34A23 23 0 1 1 40 13Z' fill='%23f5d77c'/%3E%3Cpath d='m25 33 5 5 10-12' fill='none' stroke='%23fff' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
   <style>
@@ -25,6 +25,9 @@
       --yellow-soft: #fbf1cb;
       --purple: #8b6fd6;
       --purple-soft: #eee8fb;
+      --red: #d66761;
+      --red-soft: #f8e6e3;
+      --celebration-gold: #d5ae4d;
       --danger: #a35148;
       --shadow: 0 18px 50px rgba(73, 57, 35, .09), 0 2px 8px rgba(73, 57, 35, .05);
       --date-width: 168px;
@@ -110,6 +113,7 @@
 
     .legend-dot.yellow { background: var(--yellow); }
     .legend-dot.purple { background: var(--purple); }
+    .legend-dot.red { background: var(--red); }
 
     .sync {
       display: inline-flex;
@@ -324,6 +328,83 @@
     tbody tr.future td { background-color: #fcfbf8; }
     tbody tr.future td.date-column { background: #fcfbf8; }
 
+    /* A completed day gets a calm legendary-item glow, without a travelling background. */
+    tbody tr.complete-day { position: relative; z-index: 1; }
+
+    tbody tr.complete-day td {
+      position: relative;
+      overflow: visible;
+      isolation: isolate;
+      background-color: #fffaf0;
+      background-image:
+        radial-gradient(circle at 15% 28%, rgba(213, 174, 77, .38) 0 1px, transparent 1.6px),
+        radial-gradient(circle at 39% 76%, rgba(242, 211, 128, .34) 0 1px, transparent 1.5px),
+        radial-gradient(circle at 72% 21%, rgba(224, 187, 91, .32) 0 .9px, transparent 1.5px),
+        radial-gradient(circle at 89% 67%, rgba(248, 222, 151, .42) 0 1px, transparent 1.6px),
+        linear-gradient(90deg, rgba(255, 248, 218, .64), rgba(255, 252, 239, .92), rgba(250, 235, 190, .46));
+      box-shadow:
+        inset 0 0 20px rgba(213, 174, 77, .12),
+        0 -7px 15px -13px rgba(213, 174, 77, .54),
+        0 7px 15px -13px rgba(213, 174, 77, .54);
+      animation: celebration-breathe 5.2s ease-in-out infinite;
+    }
+
+    tbody tr.complete-day td.date-column {
+      /* Keep the date anchored while the prayer columns scroll horizontally. */
+      position: sticky;
+      left: 0;
+      z-index: 2;
+      background-color: #fffaf0;
+      background-image:
+        radial-gradient(circle at 12% 24%, rgba(213, 174, 77, .38) 0 1px, transparent 1.6px),
+        radial-gradient(circle at 36% 76%, rgba(242, 211, 128, .34) 0 1px, transparent 1.5px),
+        radial-gradient(circle at 68% 18%, rgba(224, 187, 91, .32) 0 .9px, transparent 1.5px),
+        radial-gradient(circle at 88% 66%, rgba(248, 222, 151, .42) 0 1px, transparent 1.6px),
+        linear-gradient(90deg, rgba(255, 248, 218, .74), rgba(255, 252, 239, .95));
+      box-shadow:
+        7px 0 12px -12px rgba(46, 42, 34, .45),
+        inset 0 0 20px rgba(213, 174, 77, .12),
+        0 -7px 15px -13px rgba(213, 174, 77, .54),
+        0 7px 15px -13px rgba(213, 174, 77, .54);
+      animation-name: celebration-breathe-date;
+    }
+
+    tbody tr.complete-day td::before,
+    tbody tr.complete-day td::after {
+      position: absolute;
+      z-index: 0;
+      color: rgba(193, 145, 37, .62);
+      line-height: 1;
+      pointer-events: none;
+      filter: drop-shadow(0 0 4px rgba(239, 201, 102, .48));
+      animation: tiny-star-twinkle 3.8s ease-in-out infinite;
+    }
+
+    tbody tr.complete-day td::before {
+      top: -4px;
+      left: 18%;
+      content: "✦";
+      font-size: 7px;
+    }
+
+    tbody tr.complete-day td::after {
+      right: 14%;
+      bottom: -4px;
+      content: "✧";
+      font-size: 8px;
+      animation-delay: -1.7s;
+    }
+
+    tbody tr.complete-day td:nth-child(2n)::before { top: 8px; left: 73%; animation-delay: -.8s; }
+    tbody tr.complete-day td:nth-child(2n)::after { right: 66%; bottom: -3px; animation-delay: -2.5s; }
+    tbody tr.complete-day td:nth-child(3n)::before { top: -5px; left: 55%; animation-delay: -2s; }
+    tbody tr.complete-day td:nth-child(3n)::after { right: 24%; bottom: 7px; animation-delay: -3.1s; }
+    tbody tr.complete-day td:nth-child(4n)::before { top: 13px; left: 24%; animation-delay: -2.8s; }
+    tbody tr.complete-day td:nth-child(4n)::after { right: 48%; bottom: -5px; animation-delay: -1.1s; }
+    tbody tr.complete-day .date-main,
+    tbody tr.complete-day .date-sub,
+    tbody tr.complete-day .cell-button { position: relative; z-index: 1; }
+
     .date-main { display: flex; align-items: center; gap: 7px; font-size: .91rem; font-weight: 680; }
     .date-sub { margin-top: 3px; color: var(--muted); font-size: .75rem; }
 
@@ -395,6 +476,7 @@
 
     .check-token.yellow { background: var(--yellow); }
     .check-token.purple { background: var(--purple); }
+    .check-token.red { background: var(--red); }
     .check-token svg { width: 16px; height: 16px; color: #fff; stroke-width: 2.8; }
 
     .skeleton-token {
@@ -482,6 +564,7 @@
     .person-color { width: 10px; height: 10px; border-radius: 50%; }
     .person-color.yellow { background: var(--yellow); }
     .person-color.purple { background: var(--purple); }
+    .person-color.red { background: var(--red); }
 
     .checkbox-ui {
       display: grid;
@@ -500,6 +583,7 @@
     .person-toggle[aria-checked="true"] .checkbox-ui { color: #fff; }
     .person-toggle[data-person="Mardonbek"][aria-checked="true"] .checkbox-ui { background: var(--yellow); border-color: var(--yellow); }
     .person-toggle[data-person="Jorabek"][aria-checked="true"] .checkbox-ui { background: var(--purple); border-color: var(--purple); }
+    .person-toggle[data-person="Fayzulla"][aria-checked="true"] .checkbox-ui { background: var(--red); border-color: var(--red); }
 
     .toast-region {
       position: fixed;
@@ -527,6 +611,27 @@
     @keyframes token-in { from { opacity: 0; transform: scale(.75); } }
     @keyframes shimmer { to { transform: translateX(100%); } }
     @keyframes toast-in { from { opacity: 0; transform: translateY(7px); } }
+    @keyframes celebration-breathe {
+      0%, 100% {
+        box-shadow: inset 0 0 18px rgba(213, 174, 77, .10), 0 -7px 15px -13px rgba(213, 174, 77, .42), 0 7px 15px -13px rgba(213, 174, 77, .42);
+      }
+      50% {
+        box-shadow: inset 0 0 22px rgba(213, 174, 77, .15), 0 -8px 17px -13px rgba(213, 174, 77, .58), 0 8px 17px -13px rgba(213, 174, 77, .58);
+      }
+    }
+    @keyframes celebration-breathe-date {
+      0%, 100% {
+        box-shadow: 7px 0 12px -12px rgba(46, 42, 34, .45), inset 0 0 18px rgba(213, 174, 77, .10), 0 -7px 15px -13px rgba(213, 174, 77, .42), 0 7px 15px -13px rgba(213, 174, 77, .42);
+      }
+      50% {
+        box-shadow: 7px 0 12px -12px rgba(46, 42, 34, .45), inset 0 0 22px rgba(213, 174, 77, .15), 0 -8px 17px -13px rgba(213, 174, 77, .58), 0 8px 17px -13px rgba(213, 174, 77, .58);
+      }
+    }
+    @keyframes tiny-star-twinkle {
+      0%, 100% { opacity: .16; transform: translateY(1px) scale(.68) rotate(0deg); }
+      45% { opacity: .76; transform: translateY(-2px) scale(1.05) rotate(15deg); }
+      72% { opacity: .34; transform: translateY(0) scale(.82) rotate(27deg); }
+    }
 
     @media (max-width: 700px) {
       :root { --date-width: 132px; }
@@ -535,7 +640,7 @@
       .topbar { align-items: flex-start; margin-bottom: 16px; }
       .title-wrap { gap: 11px; }
       .mark { width: 43px; height: 43px; border-radius: 14px 14px 14px 5px; font-size: 22px; }
-      .people { gap: 10px; margin-top: 6px; font-size: .81rem; }
+      .people { gap: 6px 10px; margin-top: 6px; font-size: .78rem; }
       .sync { min-height: 29px; padding: 5px 9px; }
       .sync-text { display: inline; font-size: .7rem; }
       .topbar { gap: 8px; }
@@ -550,8 +655,9 @@
       .nav-button { min-width: 44px; min-height: 44px; }
       table { min-width: 440px; }
       :root { --date-width: 108px; }
-      .cell-button { min-width: 0; gap: 3px; padding: 3px; }
-      .check-token { width: 23px; height: 23px; }
+      .cell-button { min-width: 0; gap: 2px; padding: 2px; }
+      .check-token { width: 19px; height: 19px; }
+      .check-token svg { width: 12px; height: 12px; }
       thead th { font-size: .67rem; letter-spacing: 0; }
       thead th.date-column { padding-left: 14px; }
       td.date-column { padding: 0 10px 0 14px; }
@@ -564,7 +670,7 @@
     }
 
     @media (max-width: 390px) {
-      .people { display: grid; gap: 4px; }
+      .people { display: flex; gap: 4px 9px; }
       .calendar-toolbar { padding-inline: 9px; }
       .month-heading h2 { font-size: 1.08rem; }
     }
@@ -584,6 +690,7 @@
           <div class="people" aria-label="People and their colors">
             <span class="person-key"><span class="legend-dot yellow"></span>Mardonbek</span>
             <span class="person-key"><span class="legend-dot purple"></span>Jorabek</span>
+            <span class="person-key"><span class="legend-dot red"></span>Fayzulla</span>
           </div>
         </div>
       </div>
@@ -603,7 +710,7 @@
         <button id="connectButton" class="today-button" type="submit">Connect</button>
         <button id="forgetToken" class="today-button" type="button">Forget key</button>
       </form>
-      <p style="font-size:.8rem;color:var(--muted);line-height:1.6">No account screen. Both people can edit either name. Statuses are shared through GitHub and checked every 15 seconds while this tab is visible. Only the optional connection key is stored on this device. If the repository is public, its prayer history is public too. Anyone with this key can modify the repository. Without Remember, enter it again after reloading.</p>
+      <p style="font-size:.8rem;color:var(--muted);line-height:1.6">No account screen. All three people can edit any name. Statuses are shared through GitHub and checked every 15 seconds while this tab is visible. Only the optional connection key is stored on this device. If the repository is public, its prayer history is public too. Anyone with this key can modify the repository. Without Remember, enter it again after reloading.</p>
     </section>
     <section class="calendar-card" aria-label="Prayer calendar">
       <div class="calendar-toolbar">
@@ -672,6 +779,12 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>
       </span>
     </button>
+    <button class="person-toggle" type="button" role="checkbox" aria-checked="false" data-person="Fayzulla">
+      <span class="person-label"><span class="person-color red"></span>Fayzulla</span>
+      <span class="checkbox-ui">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>
+      </span>
+    </button>
   </div>
 
   <div class="toast-region" id="toastRegion" aria-live="polite" aria-atomic="false"></div>
@@ -692,7 +805,8 @@
     const START_MONTH = new Date(2026, 8, 1);
     const PRAYERS = ["fajr", "dhuhr", "asr", "maghrib", "isha"];
     const PRAYER_LABELS = { fajr: "Fajr", dhuhr: "Dhuhr", asr: "Asr", maghrib: "Maghrib", isha: "Isha" };
-    const PEOPLE = ["Mardonbek", "Jorabek"];
+    const PEOPLE = ["Mardonbek", "Jorabek", "Fayzulla"];
+    const PERSON_COLORS = { Mardonbek: "yellow", Jorabek: "purple", Fayzulla: "red" };
 
     const calendarBody = document.getElementById("calendarBody");
     const monthTitle = document.getElementById("monthTitle");
@@ -787,7 +901,7 @@
           return `<td><button class="cell-button empty" type="button" data-date="${dayKey}" data-prayer="${prayer}" ${disabled ? "disabled" : ""} aria-label="${PRAYER_LABELS[prayer]} on ${weekday}, ${dateLabel}">${loading ? '<span class="skeleton-token"></span>' : ""}</button></td>`;
         }).join("");
 
-        return `<tr class="${rowClasses}">
+        return `<tr class="${rowClasses}" data-date="${dayKey}">
           <td class="date-column">
             <div class="date-main"><span>${dateLabel}</span>${isToday ? '<span class="today-badge">Today</span>' : ""}</div>
             <div class="date-sub">${weekday}</div>
@@ -806,10 +920,11 @@
     }
 
     function renderAllStatuses() {
-      calendarBody.querySelectorAll(".cell-button").forEach(renderCellStatus);
+      calendarBody.querySelectorAll(".cell-button").forEach(button => renderCellStatus(button, undefined, false));
+      calendarBody.querySelectorAll("tr[data-date]").forEach(row => updateDayCompletion(row.dataset.date, row));
     }
 
-    function renderCellStatus(buttonOrDay, prayerMaybe) {
+    function renderCellStatus(buttonOrDay, prayerMaybe, updateDay = true) {
       const button = buttonOrDay instanceof HTMLElement
         ? buttonOrDay
         : calendarBody.querySelector(`[data-date="${buttonOrDay}"][data-prayer="${prayerMaybe}"]`);
@@ -820,7 +935,7 @@
       const completedPeople = PEOPLE.filter(person => statuses.get(recordKey(day, prayer, person)) === true);
       button.classList.toggle("empty", completedPeople.length === 0);
       button.innerHTML = completedPeople.map(person => {
-        const color = person === "Mardonbek" ? "yellow" : "purple";
+        const color = PERSON_COLORS[person];
         return `<span class="check-token ${color}" title="${person}" aria-hidden="true">${checkSvg}</span>`;
       }).join("");
 
@@ -828,6 +943,21 @@
       const fullDate = new Intl.DateTimeFormat("en", { weekday: "long", day: "numeric", month: "long" }).format(dayDate);
       const state = completedPeople.length ? `Completed by ${completedPeople.join(" and ")}` : "Not marked";
       button.setAttribute("aria-label", `${PRAYER_LABELS[prayer]} on ${fullDate}. ${state}`);
+      if (updateDay) updateDayCompletion(day, button.closest("tr"));
+    }
+
+    function updateDayCompletion(day, row = null) {
+      const dayRow = row || calendarBody.querySelector(`tr[data-date="${day}"]`);
+      if (!dayRow) return;
+      const complete = PRAYERS.every(prayer =>
+        PEOPLE.every(person => statuses.get(recordKey(day, prayer, person)) === true)
+      );
+      dayRow.classList.toggle("complete-day", complete);
+      if (complete) {
+        dayRow.setAttribute("aria-label", "All five prayers completed by Mardonbek, Jorabek, and Fayzulla");
+      } else {
+        dayRow.removeAttribute("aria-label");
+      }
     }
 
     function configured() {
@@ -911,7 +1041,7 @@
         throw new Error("Data file has an unexpected format. It was not overwritten.");
       }
       for (const [key, value] of Object.entries(data.statuses)) {
-        if (!/^\d{4}-\d{2}-\d{2}\|(fajr|dhuhr|asr|maghrib|isha)\|(Mardonbek|Jorabek)$/.test(key) ||
+        if (!/^\d{4}-\d{2}-\d{2}\|(fajr|dhuhr|asr|maghrib|isha)\|(Mardonbek|Jorabek|Fayzulla)$/.test(key) ||
             typeof value !== "boolean" || key.slice(0, 7) !== path.slice(13, 20)) {
           throw new Error("Data validation failed. Existing history was not overwritten.");
         }
